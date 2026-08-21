@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Cloud, Mail, Lock } from 'lucide-react';
+import { Cloud, Mail, Lock, User } from 'lucide-react';
 
-const Login = () => {
-  const { login, user } = useAuth();
+const Register = () => {
+  const { register, user } = useAuth();
   const navigate = useNavigate();
+  const [firstName, setFirstName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -22,7 +23,7 @@ const Login = () => {
     setError('');
     setIsLoading(true);
 
-    const result = await login(email, password);
+    const result = await register(firstName, email, password);
     if (result.success) {
       navigate('/');
     } else {
@@ -42,9 +43,9 @@ const Login = () => {
           <Cloud size={48} className="text-[#1967d2] dark:text-blue-400" />
         </div>
         
-        <h1 className="text-3xl font-bold text-gray-800 dark:text-white mb-2 relative z-10 text-center">Welcome Back</h1>
+        <h1 className="text-3xl font-bold text-gray-800 dark:text-white mb-2 relative z-10 text-center">Create Account</h1>
         <p className="text-gray-500 dark:text-gray-400 mb-8 relative z-10 text-center">
-          Log in to access your secure Google Drive clone.
+          Join Google Drive to start storing files securely.
         </p>
 
         {error && (
@@ -54,6 +55,23 @@ const Login = () => {
         )}
 
         <form onSubmit={handleSubmit} className="w-full relative z-10">
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">First Name</label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <User size={18} className="text-gray-400 dark:text-gray-500" />
+              </div>
+              <input
+                type="text"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                className="w-full bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-700 rounded-xl py-3 pl-10 pr-4 text-gray-800 dark:text-white focus:outline-none focus:border-[#1967d2] dark:focus:border-blue-500 focus:bg-white dark:focus:bg-gray-700 transition-colors"
+                placeholder="John"
+                required
+              />
+            </div>
+          </div>
+
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">Email</label>
             <div className="relative">
@@ -82,7 +100,8 @@ const Login = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-700 rounded-xl py-3 pl-10 pr-4 text-gray-800 dark:text-white focus:outline-none focus:border-[#1967d2] dark:focus:border-blue-500 focus:bg-white dark:focus:bg-gray-700 transition-colors"
-                placeholder="Enter your password"
+                placeholder="Create a password"
+                minLength="6"
                 required
               />
             </div>
@@ -93,14 +112,14 @@ const Login = () => {
             disabled={isLoading}
             className="w-full bg-[#1967d2] hover:bg-[#1a73e8] text-white font-medium py-3 rounded-xl shadow-md transition-all disabled:opacity-50"
           >
-            {isLoading ? 'Logging in...' : 'Log In'}
+            {isLoading ? 'Creating account...' : 'Sign Up'}
           </button>
         </form>
 
         <p className="mt-6 text-gray-500 dark:text-gray-400 text-sm relative z-10">
-          Don't have an account?{' '}
-          <Link to="/register" className="text-[#1967d2] dark:text-blue-400 font-medium hover:underline">
-            Create one
+          Already have an account?{' '}
+          <Link to="/login" className="text-[#1967d2] dark:text-blue-400 font-medium hover:underline">
+            Log in
           </Link>
         </p>
       </div>
@@ -108,4 +127,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default Register;

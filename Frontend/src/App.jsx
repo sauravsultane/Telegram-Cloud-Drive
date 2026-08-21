@@ -2,11 +2,13 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { FileProvider } from './context/FileContext';
+import { ThemeProvider } from './context/ThemeContext';
 import AppLayout from './components/layout/AppLayout';
 import Home from './pages/Home';
 import Login from './pages/Login';
-import Trash from './pages/Trash';
+import Register from './pages/Register';
 import SharedFile from './pages/SharedFile';
+import Settings from './pages/Settings';
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -19,6 +21,7 @@ const AppRoutes = () => {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
       <Route path="/share/:token" element={<SharedFile />} />
       
       <Route path="/" element={
@@ -29,7 +32,7 @@ const AppRoutes = () => {
         </ProtectedRoute>
       }>
         <Route index element={<Home />} />
-        <Route path="trash" element={<Trash />} />
+        <Route path="settings" element={<Settings />} />
       </Route>
     </Routes>
   );
@@ -37,11 +40,13 @@ const AppRoutes = () => {
 
 const App = () => {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <AppRoutes />
-      </BrowserRouter>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <BrowserRouter>
+          <AppRoutes />
+        </BrowserRouter>
+      </AuthProvider>
+    </ThemeProvider>
   );
 };
 

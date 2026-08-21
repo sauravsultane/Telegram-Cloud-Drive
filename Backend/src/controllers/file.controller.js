@@ -2,6 +2,48 @@ const File = require('../models/File.model');
 const telegramService = require('../services/telegram.service');
 const chunkService = require('../services/chunk.service');
 
+const getFileCategory = (mimetype, filename = '') => {
+  if (mimetype.startsWith('image/')) return 'image';
+  if (mimetype.startsWith('video/')) return 'video';
+  if (mimetype.startsWith('audio/')) return 'audio';
+  
+  const documentTypes = [
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'text/plain',
+    'text/csv',
+    'application/vnd.ms-powerpoint',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  ];
+  if (documentTypes.includes(mimetype)) return 'document';
+  
+  const archiveTypes = [
+    'application/zip',
+    'application/x-zip-compressed',
+    'application/x-zip',
+    'application/x-rar-compressed',
+    'application/vnd.rar',
+    'application/x-7z-compressed',
+    'application/x-tar',
+    'application/gzip',
+    'application/x-bzip2',
+  ];
+  if (archiveTypes.includes(mimetype)) return 'archive';
+
+  // Fallback: detect by file extension (useful when browser sends application/octet-stream)
+  const ext = filename.split('.').pop().toLowerCase();
+  if (['zip', 'rar', '7z', 'tar', 'gz', 'bz2', 'xz'].includes(ext)) return 'archive';
+  if (['pdf', 'doc', 'docx', 'txt', 'ppt', 'pptx', 'xls', 'xlsx', 'csv'].includes(ext)) return 'document';
+  if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'ico'].includes(ext)) return 'image';
+  if (['mp4', 'mkv', 'avi', 'mov', 'webm', 'flv', 'wmv'].includes(ext)) return 'video';
+  if (['mp3', 'wav', 'aac', 'ogg', 'flac', 'm4a'].includes(ext)) return 'audio';
+
+  return 'other';
+};
+
 const getFiles = async (req, res) => {
   try {
     const { folderId = null, search, sortBy = 'createdAt' } = req.query;
@@ -29,7 +71,12 @@ const getFiles = async (req, res) => {
 
 const getTrashFiles = async (req, res) => {
   try {
-    const files = await File.find({ owner: req.user._id, isDeleted: true }).sort({ updatedAt: -1 });
+    const { search } = req.query;
+    let query = { owner: req.user._id, isDeleted: true };
+    if (search) {
+      query.name = { $regex: search, $options: 'i' };
+    }
+    const files = await File.find(query).sort({ updatedAt: -1 });
     res.json(files);
   } catch (error) {
     console.error(error);
@@ -68,10 +115,13 @@ const uploadFile = async (req, res) => {
       telegramData = await telegramService.uploadDocument(buffer, originalname, mimetype);
     }
 
+    const category = getFileCategory(mimetype, originalname);
+
     const newFile = await File.create({
       name: originalname,
       originalName: originalname,
       mimeType: mimetype,
+      category,
       size,
       telegramFileId: telegramData.fileId || null,
       telegramMessageId: telegramData.messageId || null,
@@ -92,7 +142,8 @@ const downloadFile = async (req, res) => {
     const file = await File.findOne({ _id: req.params.id, owner: req.user._id });
     if (!file) return res.status(404).json({ message: 'File not found' });
 
-    res.setHeader('Content-Disposition', `attachment; filename="${file.originalName}"`);
+    const disposition = req.query.action === 'view' ? 'inline' : 'attachment';
+    res.setHeader('Content-Disposition', `${disposition}; filename="${file.originalName}"`);
     res.setHeader('Content-Type', file.mimeType);
 
     if (file.chunks && file.chunks.length > 0) {
@@ -197,6 +248,119 @@ const permanentDeleteFile = async (req, res) => {
   }
 };
 
+const mongoose = require('mongoose');
+
+const getStorageStats = async (req, res) => {
+  try {
+    const result = await File.aggregate([
+      { $match: { owner: new mongoose.Types.ObjectId(req.user._id), isDeleted: false } }, // Optionally include trash or not
+      { $group: { _id: null, totalSize: { $sum: '$size' } } }
+    ]);
+    
+    const totalSize = result.length > 0 ? result[0].totalSize : 0;
+    
+    // Hardcoded limit for now, e.g., 15GB
+    const limit = 15 * 1024 * 1024 * 1024;
+    
+    res.json({ used: totalSize, limit });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error fetching storage stats' });
+  }
+};
+// Extension maps per category
+const CATEGORY_EXTENSIONS = {
+  image: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'ico'],
+  video: ['mp4', 'mkv', 'avi', 'mov', 'webm', 'flv', 'wmv'],
+  audio: ['mp3', 'wav', 'aac', 'ogg', 'flac', 'm4a'],
+  document: ['pdf', 'doc', 'docx', 'txt', 'ppt', 'pptx', 'xls', 'xlsx', 'csv'],
+  archive: ['zip', 'rar', '7z', 'tar', 'gz', 'bz2', 'xz'],
+};
+
+const getFilesByCategory = async (req, res) => {
+  try {
+    const { category } = req.params;
+    const { search } = req.query;
+
+    const extensions = CATEGORY_EXTENSIONS[category];
+    if (!extensions) {
+      return res.status(400).json({ message: 'Invalid category' });
+    }
+
+    // Build extension regex: matches name ending with any of the extensions
+    const extPattern = extensions.map(e => `\.${e}`).join('|');
+    const nameExtRegex = new RegExp(`(${extPattern})$`, 'i');
+
+    let baseQuery = {
+      owner: req.user._id,
+      isDeleted: false,
+      $or: [
+        { category },
+        { name: nameExtRegex },
+      ],
+    };
+
+    if (search) {
+      baseQuery.name = { $regex: search, $options: 'i' };
+    }
+
+    const files = await File.find(baseQuery).sort({ createdAt: -1 });
+    res.json(files);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error fetching files by category' });
+  }
+};
+
+
+
+const getRecentFiles = async (req, res) => {
+  try {
+    const { search } = req.query;
+    let query = { owner: req.user._id, isDeleted: false };
+    if (search) {
+      query.name = { $regex: search, $options: 'i' };
+    }
+
+    const files = await File.find(query).sort({ createdAt: -1 }).limit(20);
+    res.json(files);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error fetching recent files' });
+  }
+};
+
+const getStarredFiles = async (req, res) => {
+  try {
+    const { search } = req.query;
+    let query = { owner: req.user._id, isDeleted: false, starred: true };
+    if (search) {
+      query.name = { $regex: search, $options: 'i' };
+    }
+
+    const files = await File.find(query).sort({ updatedAt: -1 });
+    res.json(files);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error fetching starred files' });
+  }
+};
+
+const toggleStarFile = async (req, res) => {
+  try {
+    const file = await File.findOne({ _id: req.params.id, owner: req.user._id });
+    if (!file) return res.status(404).json({ message: 'File not found' });
+    
+    file.starred = !file.starred;
+    await file.save();
+    
+    res.json(file);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error toggling star status' });
+  }
+};
+
 module.exports = {
   getFiles,
   getTrashFiles,
@@ -207,4 +371,9 @@ module.exports = {
   softDeleteFile,
   restoreFile,
   permanentDeleteFile,
+  getStorageStats,
+  getFilesByCategory,
+  getRecentFiles,
+  getStarredFiles,
+  toggleStarFile,
 };

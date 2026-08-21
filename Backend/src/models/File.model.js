@@ -13,6 +13,11 @@ const fileSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  category: {
+    type: String,
+    enum: ['document', 'image', 'video', 'audio', 'archive', 'other'],
+    default: 'other',
+  },
   size: {
     type: Number,
     required: true,
@@ -34,6 +39,10 @@ const fileSchema = new mongoose.Schema({
     required: true,
   },
   isDeleted: {
+    type: Boolean,
+    default: false,
+  },
+  starred: {
     type: Boolean,
     default: false,
   },

@@ -8,10 +8,8 @@ const UploadQueue = () => {
 
   if (uploadQueue.length === 0) return null;
 
-  // Find active and completed uploads
-  const activeUploads = uploadQueue.filter(u => u.status === 'uploading');
+  // Find completed uploads
   const completedUploads = uploadQueue.filter(u => u.status === 'completed');
-  const errorUploads = uploadQueue.filter(u => u.status === 'error');
 
   // If all completed and we want to auto-hide, we could set a timeout
   // For now, we'll just show it always if there are items

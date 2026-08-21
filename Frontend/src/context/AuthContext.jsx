@@ -27,9 +27,9 @@ export const AuthProvider = ({ children }) => {
     checkAuth();
   }, []);
 
-  const login = async (telegramData) => {
+  const login = async (email, password) => {
     try {
-      const res = await api.post('/auth/telegram', telegramData);
+      const res = await api.post('/auth/login', { email, password });
       localStorage.setItem('token', res.data.token);
       setUser(res.data);
       return { success: true };
@@ -39,13 +39,25 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const register = async (firstName, email, password) => {
+    try {
+      const res = await api.post('/auth/register', { firstName, email, password });
+      localStorage.setItem('token', res.data.token);
+      setUser(res.data);
+      return { success: true };
+    } catch (error) {
+      console.error("Registration failed:", error);
+      return { success: false, error: error.response?.data?.message || 'Registration failed' };
+    }
+  };
+
   const logout = () => {
     localStorage.removeItem('token');
     setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );
