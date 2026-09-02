@@ -9,7 +9,7 @@ export default defineConfig({
     tailwindcss(),
   ],
   server: {
-    host: '127.0.0.1',
-    port: 5173
+    host: '0.0.0.0', // Allows connections from external IPs (needed for Render)
+    port: process.env.PORT || 5173
   }
 })
