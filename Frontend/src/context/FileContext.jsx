@@ -27,7 +27,6 @@ export const FileProvider = ({ children }) => {
 
   const fetchContent = useCallback(async (folderId = null, search = '', view = currentView) => {
     setLoading(true);
-    console.log('[fetchContent] view:', view, '| folderId:', folderId, '| search:', search);
     try {
       setCurrentFolderId(folderId);
       
@@ -40,23 +39,18 @@ export const FileProvider = ({ children }) => {
 
       if (['document', 'image', 'video', 'audio', 'archive'].includes(view)) {
         fileRes = await api.get(`/files/category/${view}`, { params: { search } });
-        console.log('[fetchContent] category result:', fileRes.data);
         setFiles(fileRes.data);
       } else if (view === 'recent') {
         fileRes = await api.get('/files/recent', { params: { search } });
-        console.log('[fetchContent] recent result:', fileRes.data);
         setFiles(fileRes.data);
       } else if (view === 'starred') {
         fileRes = await api.get('/files/starred', { params: { search } });
-        console.log('[fetchContent] starred result:', fileRes.data);
         setFiles(fileRes.data);
       } else if (view === 'trash') {
         fileRes = await api.get('/files/trash', { params: { search } });
-        console.log('[fetchContent] trash result:', fileRes.data);
         setFiles(fileRes.data);
       } else if (view === 'home') {
         fileRes = await api.get('/files/recent', { params: { search } });
-        console.log('[fetchContent] home/recent result:', fileRes.data);
         setFiles(fileRes.data);
         if (!search) {
           const folderRes = await api.get('/folders', { params: { parentId: null } });
@@ -65,7 +59,6 @@ export const FileProvider = ({ children }) => {
       } else {
         // default 'drive'
         fileRes = await api.get('/files', { params: { folderId, search } });
-        console.log('[fetchContent] drive result:', fileRes.data);
         setFiles(fileRes.data);
         if (!search) {
           const folderRes = await api.get('/folders', { params: { parentId: folderId } });
