@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import api from '../services/api';
+import api from '../services/axiosInstance';
 import { Cloud, Download, AlertTriangle } from 'lucide-react';
 import { formatBytes } from '../utils/formatBytes';
 

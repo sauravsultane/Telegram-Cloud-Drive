@@ -1,5 +1,5 @@
 import React, { createContext, useState, useCallback, useContext } from 'react';
-import api from '../services/api';
+import api from '../services/axiosInstance';
 
 export const FileContext = createContext();
 

@@ -9,6 +9,36 @@ import EmptyState from '../components/files/EmptyState';
 import FilePreviewModal from '../components/files/FilePreviewModal';
 import Settings from './Settings';
 
+const FilterDropdown = ({ id, label, options, value, onChange, isOpen, onToggle }) => (
+  <div className="relative">
+    <button
+      onClick={onToggle}
+      className={`border rounded-full px-4 py-1.5 text-sm font-medium flex items-center gap-1.5 transition-colors ${
+        value !== options[0].value
+          ? 'border-[#1967d2] text-[#1967d2] bg-[#e8f0fe]'
+          : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+      }`}
+    >
+      <span>{options.find(o => o.value === value)?.label || label}</span>
+      <ChevronDown size={14} />
+    </button>
+    {isOpen && (
+      <div className="absolute top-9 left-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl py-1 z-50 min-w-[140px]">
+        {options.map(opt => (
+          <button
+            key={opt.value}
+            onClick={() => { onChange(opt.value); onToggle(); }}
+            className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
+              value === opt.value ? 'text-[#1967d2] font-medium bg-[#e8f0fe] dark:bg-blue-900/30 dark:text-blue-400' : 'text-gray-700 dark:text-gray-200'
+            }`}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+    )}
+  </div>
+);
 const Home = () => {
   const { files, folders, currentFolderId, folderPath, currentView, loading, fetchContent, uploadFile, toggleStar, deleteFile, navigateToFolder, navigateBack } = useFiles();
   const [selectedItem, setSelectedItem] = useState(null);
@@ -115,36 +145,6 @@ const Home = () => {
     { value: 'name', label: 'Name' },
   ];
 
-  const FilterDropdown = ({ id, label, options, value, onChange }) => (
-    <div className="relative">
-      <button
-        onClick={() => setOpenDropdown(openDropdown === id ? null : id)}
-        className={`border rounded-full px-4 py-1.5 text-sm font-medium flex items-center gap-1.5 transition-colors ${
-          value !== options[0].value
-            ? 'border-[#1967d2] text-[#1967d2] bg-[#e8f0fe]'
-            : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-        }`}
-      >
-        <span>{options.find(o => o.value === value)?.label || label}</span>
-        <ChevronDown size={14} />
-      </button>
-      {openDropdown === id && (
-        <div className="absolute top-9 left-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl py-1 z-50 min-w-[140px]">
-          {options.map(opt => (
-            <button
-              key={opt.value}
-              onClick={() => { onChange(opt.value); setOpenDropdown(null); }}
-              className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
-                value === opt.value ? 'text-[#1967d2] font-medium bg-[#e8f0fe] dark:bg-blue-900/30 dark:text-blue-400' : 'text-gray-700 dark:text-gray-200'
-              }`}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
 
   if (currentView === 'settings') {
     return <Settings />;
@@ -178,6 +178,8 @@ const Home = () => {
             options={TYPE_OPTIONS}
             value={typeFilter}
             onChange={setTypeFilter}
+            isOpen={openDropdown === 'type'}
+            onToggle={() => setOpenDropdown(openDropdown === 'type' ? null : 'type')}
           />
           <FilterDropdown
             id="sort"
@@ -185,6 +187,8 @@ const Home = () => {
             options={SORT_OPTIONS}
             value={sortBy}
             onChange={setSortBy}
+            isOpen={openDropdown === 'sort'}
+            onToggle={() => setOpenDropdown(openDropdown === 'sort' ? null : 'sort')}
           />
           {/* Asc / Desc toggle */}
           <button
