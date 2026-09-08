@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Telegram Drive • Modern Cloud Storage</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --font-main: 'Inter', system-ui, -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+
+      /* Dark Theme (Default) */
+      --bg-base: #0a0d14;
+      --bg-surface: rgba(18, 24, 38, 0.7);
+      --bg-sidebar: rgba(12, 16, 24, 0.95);
+      --bg-card: rgba(255, 255, 255, 0.02);
+      --bg-card-hover: rgba(255, 255, 255, 0.05);
+      --bg-input: rgba(255, 255, 255, 0.05);
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-focus: rgba(56, 189, 248, 0.5);
+
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --text-subtle: #64748b;
+
+      /* Telegram Blue Accents */
+      --tg-blue-light: #38bdf8;
+      --tg-blue: #0284c7;
+      --tg-blue-dark: #0369a1;
+      --tg-gradient: linear-gradient(135deg, #38bdf8 0%, #2563eb 100%);
+      --tg-glow: rgba(56, 189, 248, 0.25);
+
+      /* Glassmorphism */
+      --glass-blur: blur(16px);
+      --glass-border: 1px solid var(--border-subtle);
+      --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25);
+    }
+
+    html.light {
+      --bg-base: #f8fafc;
+      --bg-surface: rgba(255, 255, 255, 0.85);
+      --bg-sidebar: rgba(248, 250, 252, 0.95);
+      --bg-card: rgba(255, 255, 255, 0.8);
+      --bg-card-hover: #ffffff;
+      --bg-input: rgba(0, 0, 0, 0.04);
+      --border-subtle: rgba(0, 0, 0, 0.08);
+      --border-focus: rgba(2, 132, 199, 0.5);
+
+      --text-main: #0f172a;
+      --text-muted: #475569;
+      --text-subtle: #94a3b8;
+      --glass-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.05);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      font-family: var(--font-main);
+      background-color: var(--bg-base);
+      color: var(--text-main);
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+      display: flex;
+    }
+
+    /* Hide all scrollbars */
+    * {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    ::-webkit-scrollbar {
+      display: none;
+      width: 0px;
+      height: 0px;
+      background: transparent;
+    }
+
+    /* Layout */
+    #app-container {
+      display: flex;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 260px;
+      background: var(--bg-sidebar);
+      backdrop-filter: var(--glass-blur);
+      border-right: var(--glass-border);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      z-index: 40;
+      transition: transform 0.3s ease;
+    }
+
+    .brand-header {
+      height: 64px;
+      padding: 0 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: var(--glass-border);
+    }
+
+    .tg-logo {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: var(--tg-gradient);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 14px var(--tg-glow);
+      flex-shrink: 0;
+    }
+
+    .tg-logo svg {
+      width: 20px;
+      height: 20px;
+      fill: #ffffff;
+      transform: translate(-1px, 1px) rotate(-5deg);
+    }
+
+    .brand-title {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-badge {
+      font-size: 10px;
+      color: var(--tg-blue-light);
+      text-transform: uppercase;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+    }
+
+    /* Upload Action */
+    .action-container {
+      padding: 16px;
+      position: relative;
+    }
+
+    .btn-new {
+      width: 100%;
+      height: 42px;
+      background: var(--tg-gradient);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-family: var(--font-main);
+      font-size: 13.5px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+      box-shadow: 0 4px 16px var(--tg-glow);
+      transition: all 0.2s ease;
+    }
+
+    .btn-new:hover {
+      opacity: 0.95;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px var(--tg-glow);
+    }
+
+    /* Navigation */
+    .nav-list {
+      flex: 1;
+      padding: 8px 12px;
+      overflow-y: auto;
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .nav-header {
+      font-size: 11px;
+      text-transform: uppercase;
+      color: var(--text-subtle);
+      font-weight: 600;
+      padding: 8px 12px 4px 12px;
+      letter-spacing: 0.05em;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 9px 12px;
+      border-radius: 10px;
+      color: var(--text-muted);
+      font-size: 13.5px;
+      font-weight: 500;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      border: 1px solid transparent;
+    }
+
+    .nav-item:hover {
+      color: var(--text-main);
+      background: var(--bg-card-hover);
+    }
+
+    .nav-item.active {
+      color: var(--tg-blue-light);
+      background: rgba(56, 189, 248, 0.1);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      font-weight: 600;
+    }
+
+    .nav-icon {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .nav-icon svg {
+      width: 17px;
+      height: 17px;
+      stroke-width: 2;
+    }
+
+    /* Storage Indicator */
+    .storage-box {
+      margin: 16px;
+      padding: 14px;
+      background: var(--bg-card);
+      border: var(--glass-border);
+      border-radius: 12px;
+    }
+
+    .storage-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      margin-bottom: 8px;
+    }
+
+    .storage-bar-bg {
+      width: 100%;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+
+    .storage-bar-fill {
+      width: 28%;
+      height: 100%;
+      background: var(--tg-gradient);
+      border-radius: 99px;
+    }
+
+    /* Main Content */
+    .main-wrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+      min-width: 0;
+    }
+
+    /* Top Navbar */
+    .top-nav {
+      height: 64px;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg-surface);
+      backdrop-filter: var(--glass-blur);
+      border-bottom: var(--glass-border);
+      z-index: 30;
+      gap: 16px;
+    }
+
+    .search-box {
+      flex: 1;
+      max-width: 580px;
+      position: relative;
+    }
+
+    .search-input {
+      width: 100%;
+      height: 40px;
+      background: var(--bg-input);
+      border: var(--glass-border);
+      border-radius: 12px;
+      padding: 0 44px 0 38px;
+      color: var(--text-main);
+      font-family: var(--font-main);
+      font-size: 13.5px;
+      outline: none;
+      transition: all 0.2s;
+    }
+
+    .search-input:focus {
+      border-color: var(--border-focus);
+      background: var(--bg-surface);
+      box-shadow: 0 0 0 3px var(--tg-glow);
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-subtle);
+      pointer-events: none;
+    }
+
+    .search-shortcut {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: var(--bg-card);
+      border: var(--glass-border);
+      color: var(--text-subtle);
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      border-radius: 99px;
+      background: rgba(56, 189, 248, 0.1);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      color: var(--tg-blue-light);
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 99px;
+      background: #10b981;
+      box-shadow: 0 0 8px #10b981;
+    }
+
+    .icon-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: transparent;
+      border: var(--glass-border);
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .icon-btn:hover {
+      background: var(--bg-card-hover);
+      color: var(--text-main);
+    }
+
+    .user-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: var(--tg-gradient);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      box-shadow: 0 2px 8px var(--tg-glow);
+    }
+
+    /* Sub Toolbar & Filters */
+    .filter-toolbar {
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      border-bottom: var(--glass-border);
+      background: rgba(255, 255, 255, 0.01);
+    }
+
+    .filter-chip {
+      height: 32px;
+      padding: 0 14px;
+      border-radius: 99px;
+      background: var(--bg-card);
+      border: var(--glass-border);
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .filter-chip:hover {
+      background: var(--bg-card-hover);
+      color: var(--text-main);
+    }
+
+    .filter-chip.active {
+      background: rgba(56, 189, 248, 0.12);
+      border-color: rgba(56, 189, 248, 0.35);
+      color: var(--tg-blue-light);
+      font-weight: 600;
+    }
+
+    .view-toggle-group {
+      margin-left: auto;
+      display: flex;
+      background: var(--bg-input);
+      border: var(--glass-border);
+      border-radius: 8px;
+      padding: 2px;
+    }
+
+    .view-btn {
+      padding: 5px 8px;
+      border-radius: 6px;
+      background: transparent;
+      border: none;
+      color: var(--text-subtle);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      transition: all 0.15s;
+    }
+
+    .view-btn.active {
+      background: var(--bg-surface);
+      color: var(--tg-blue-light);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    }
+
+    /* Content Area */
+    .content-area {
+      flex: 1;
+      padding: 24px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+    }
+
+    .section-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-subtle);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 14px;
+    }
+
+    /* Grid Layout */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 16px;
+    }
+
+    .drive-card {
+      background: var(--bg-card);
+      border: var(--glass-border);
+      border-radius: 16px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .drive-card:hover {
+      background: var(--bg-card-hover);
+      border-color: rgba(56, 189, 248, 0.3);
+      transform: translateY(-2px);
+      box-shadow: var(--glass-shadow);
+    }
+
+    .drive-card.selected {
+      background: rgba(56, 189, 248, 0.08);
+      border-color: rgba(56, 189, 248, 0.4);
+    }
+
+    .card-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 12px;
+      background: rgba(56, 189, 248, 0.1);
+      color: var(--tg-blue-light);
+    }
+
+    .card-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-main);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      width: 100%;
+      margin-bottom: 4px;
+    }
+
+    .card-meta {
+      font-size: 11px;
+      color: var(--text-subtle);
+    }
+
+    /* List Layout */
+    .files-list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .list-row {
+      display: flex;
+      align-items: center;
+      padding: 12px 16px;
+      border-radius: 10px;
+      border: 1px solid transparent;
+      transition: all 0.15s;
+      cursor: pointer;
+    }
+
+    .list-row:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--border-subtle);
+    }
+
+    .list-row.selected {
+      background: rgba(56, 189, 248, 0.08);
+      border-color: rgba(56, 189, 248, 0.3);
+    }
+
+    /* Bottom Meta / Status Bar */
+    .status-footer {
+      height: 32px;
+      padding: 0 24px;
+      background: var(--bg-surface);
+      backdrop-filter: var(--glass-blur);
+      border-top: var(--glass-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--text-subtle);
+      z-index: 30;
+    }
+
+    .footer-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .footer-live-clock {
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      .sidebar {
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        transform: translateX(-100%);
+      }
+      .sidebar.open {
+        transform: translateX(0);
+      }
+      .menu-btn { display: flex !important; }
+    }
+    .menu-btn { display: none; }
+  </style>
+</head>
+<body>
+  <div id="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="brand-header">
+        <div class="tg-logo">
+          <!-- Telegram Paper Plane -->
+          <svg viewBox="0 0 24 24">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/>
+          </svg>
+        </div>
+        <div>
+          <div class="brand-title">Telegram Drive</div>
+          <div class="brand-badge">Cloud Bot Storage</div>
+        </div>
+      </div>
+
+      <div class="action-container">
+        <button class="btn-new" onclick="alert('Upload modal triggered!')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          <span>New Upload</span>
+        </button>
+      </div>
+
+      <ul class="nav-list">
+        <li class="nav-header">Files</li>
+        <li>
+          <a class="nav-item active" onclick="setActiveNav(this)">
+            <span class="nav-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+              <span>My Drive</span>
+            </span>
+          </a>
+        </li>
+        <li>
+          <a class="nav-item" onclick="setActiveNav(this)">
+            <span class="nav-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+              <span>Home</span>
+            </span>
+          </a>
+        </li>
+        <li>
+          <a class="nav-item" onclick="setActiveNav(this)">
+            <span class="nav-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              <span>Documents</span>
+            </span>
+          </a>
+        </li>
+        <li>
+          <a class="nav-item" onclick="setActiveNav(this)">
+            <span class="nav-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+              <span>Archives</span>
+            </span>
+          </a>
+        </li>
+        <li class="nav-header">Favorites & Trash</li>
+        <li>
+          <a class="nav-item" onclick="setActiveNav(this)">
+            <span class="nav-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              <span>Starred</span>
+            </span>
+          </a>
+        </li>
+        <li>
+          <a class="nav-item" onclick="setActiveNav(this)">
+            <span class="nav-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              <span>Recent</span>
+            </span>
+          </a>
+        </li>
+        <li>
+          <a class="nav-item" onclick="setActiveNav(this)">
+            <span class="nav-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              <span>Trash</span>
+            </span>
+          </a>
+        </li>
+        <li>
+          <a class="nav-item" onclick="setActiveNav(this)">
+            <span class="nav-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+              <span>Settings</span>
+            </span>
+          </a>
+        </li>
+      </ul>
+
+      <!-- Storage Box -->
+      <div class="storage-box">
+        <div class="storage-info">
+          <span style="font-weight:600; font-size:12px;">Storage</span>
+          <span style="color:#10b981; font-weight:600; font-size:10px; background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.2); padding:2px 8px; border-radius:99px;">Unlimited</span>
+        </div>
+        <div style="font-size:14px; font-weight:700; color:var(--text-main); margin-top:4px;">
+          647.54 KB <span style="font-size:11px; font-weight:400; color:var(--text-subtle);">used</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Layout -->
+    <div class="main-wrapper">
+      <!-- Navbar -->
+      <header class="top-nav">
+        <button class="icon-btn menu-btn" onclick="toggleSidebar()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+        </button>
+
+        <div class="search-box">
+          <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <input type="text" class="search-input" placeholder="Search in Telegram Drive...">
+          <span class="search-shortcut">⌘K</span>
+        </div>
+
+        <div class="nav-actions">
+          <div class="status-pill">
+            <span class="status-dot"></span>
+            <span>Bot Connected</span>
+          </div>
+
+          <button class="icon-btn" onclick="toggleTheme()" title="Toggle Theme">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+          </button>
+
+          <div class="user-avatar" title="Saurav">S</div>
+        </div>
+      </header>
+
+      <!-- Filter Subbar -->
+      <div class="filter-toolbar">
+        <div class="filter-chip active" onclick="toggleChip(this)">All Types</div>
+        <div class="filter-chip" onclick="toggleChip(this)">📄 Documents</div>
+        <div class="filter-chip" onclick="toggleChip(this)">🖼️ Images</div>
+        <div class="filter-chip" onclick="toggleChip(this)">🎥 Videos</div>
+        <div class="filter-chip" onclick="toggleChip(this)">📦 Archives</div>
+
+        <div class="view-toggle-group">
+          <button class="view-btn active" onclick="setView('grid', this)">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+          </button>
+          <button class="view-btn" onclick="setView('list', this)">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Main Scrollable Area -->
+      <div class="content-area">
+        <!-- Folders Section -->
+        <div>
+          <div class="section-title">Folders</div>
+          <div class="cards-grid">
+            <div class="drive-card" onclick="selectCard(this)">
+              <div class="card-icon">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+              </div>
+              <div class="card-title">Project Assets</div>
+              <div class="card-meta">12 files • 140 MB</div>
+            </div>
+
+            <div class="drive-card" onclick="selectCard(this)">
+              <div class="card-icon" style="background: rgba(16, 185, 129, 0.1); color: #10b981;">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+              </div>
+              <div class="card-title">Documents</div>
+              <div class="card-meta">8 files • 45 MB</div>
+            </div>
+
+            <div class="drive-card" onclick="selectCard(this)">
+              <div class="card-icon" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b;">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+              </div>
+              <div class="card-title">Archives & Backups</div>
+              <div class="card-meta">3 files • 375 MB</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Files Section -->
+        <div>
+          <div class="section-title">Files</div>
+          <div class="cards-grid" id="files-container">
+            <div class="drive-card" onclick="selectCard(this)">
+              <div class="card-icon">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              </div>
+              <div class="card-title">Design_Mockup_v2.png</div>
+              <div class="card-meta">3.4 MB • Sep 8, 2026</div>
+            </div>
+
+            <div class="drive-card" onclick="selectCard(this)">
+              <div class="card-icon" style="background: rgba(16, 185, 129, 0.1); color: #10b981;">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              </div>
+              <div class="card-title">Quarterly_Report.pdf</div>
+              <div class="card-meta">1.8 MB • Sep 7, 2026</div>
+            </div>
+
+            <div class="drive-card" onclick="selectCard(this)">
+              <div class="card-icon" style="background: rgba(239, 68, 68, 0.1); color: #ef4444;">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+              </div>
+              <div class="card-title">Product_Demo.mp4</div>
+              <div class="card-meta">42.1 MB • Sep 6, 2026</div>
+            </div>
+
+            <div class="drive-card" onclick="selectCard(this)">
+              <div class="card-icon" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b;">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/></svg>
+              </div>
+              <div class="card-title">Release_v1.0.zip</div>
+              <div class="card-meta">128.5 MB • Sep 5, 2026</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Meta Status Bar -->
+      <footer class="status-footer">
+        <div class="footer-left">
+          <span style="color:#10b981; font-weight:600;">● Telegram Bot API Active</span>
+          <span>•</span>
+          <span>Channel: @TeleDriveStorage</span>
+        </div>
+        <div class="footer-live-clock" id="live-clock">
+          Loading time...
+        </div>
+      </footer>
+    </div>
+  </div>
+
+  <script>
+    // Live clock
+    function updateClock() {
+      const now = new Date();
+      const options = { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' };
+      document.getElementById('live-clock').innerText = now.toLocaleString('en-US', options);
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // Theme toggle
+    function toggleTheme() {
+      document.documentElement.classList.toggle('dark');
+      document.documentElement.classList.toggle('light');
+    }
+
+    // Nav active
+    function setActiveNav(el) {
+      document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+      el.classList.add('active');
+    }
+
+    // Filter chip toggle
+    function toggleChip(el) {
+      document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+      el.classList.add('active');
+    }
+
+    // Selection
+    function selectCard(el) {
+      document.querySelectorAll('.drive-card').forEach(c => c.classList.remove('selected'));
+      el.classList.add('selected');
+    }
+
+    // View mode
+    function setView(mode, btn) {
+      document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const container = document.getElementById('files-container');
+      if (mode === 'list') {
+        container.style.display = 'flex';
+        container.style.flexDirection = 'column';
+      } else {
+        container.style.display = 'grid';
+        container.style.flexDirection = 'unset';
+      }
+    }
+
+    // Sidebar Mobile Toggle
+    function toggleSidebar() {
+      document.getElementById('sidebar').classList.toggle('open');
+    }
+  </script>
+</body>
+</html>

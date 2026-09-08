@@ -17,9 +17,29 @@
     min-height: 100vh;
     margin: 0;
     padding: 0;
-    background-color: #f8f9fa;
+    background-color: #f0f2f5;
+    scroll-behavior: smooth;
   }
   .dark html, .dark body, .dark #root {
-    background-color: #111827;
+    background-color: #0f1117;
+  }
+
+  /* Hide scrollbars globally */
+  * {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+
+  *::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+    background: transparent;
   }
 }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+

@@ -1,7 +1,25 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { useFiles } from '../context/FileContext';
-import { UploadCloud, Folder as FolderIcon, File as FileIcon, ChevronDown, ArrowUp, ArrowDown, LayoutGrid, List } from 'lucide-react';
+import { 
+  UploadCloud, 
+  Folder as FolderIcon, 
+  File as FileIcon, 
+  ChevronDown, 
+  ArrowUp, 
+  ArrowDown, 
+  LayoutGrid, 
+  List,
+  ChevronRight,
+  Filter,
+  RotateCcw,
+  Sparkles,
+  Info,
+  X,
+  FileText,
+  Calendar,
+  HardDrive
+} from 'lucide-react';
 import { formatBytes } from '../utils/formatBytes';
 import { format } from 'date-fns';
 import FileGrid from '../components/files/FileGrid';
@@ -9,52 +27,76 @@ import EmptyState from '../components/files/EmptyState';
 import FilePreviewModal from '../components/files/FilePreviewModal';
 import Settings from './Settings';
 
-const FilterDropdown = ({ id, label, options, value, onChange, isOpen, onToggle }) => (
-  <div className="relative">
-    <button
-      onClick={onToggle}
-      className={`border rounded-full px-4 py-1.5 text-sm font-medium flex items-center gap-1.5 transition-colors ${
-        value !== options[0].value
-          ? 'border-[#1967d2] text-[#1967d2] bg-[#e8f0fe]'
-          : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-      }`}
-    >
-      <span>{options.find(o => o.value === value)?.label || label}</span>
-      <ChevronDown size={14} />
-    </button>
-    {isOpen && (
-      <div className="absolute top-9 left-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl py-1 z-50 min-w-[140px]">
-        {options.map(opt => (
-          <button
-            key={opt.value}
-            onClick={() => { onChange(opt.value); onToggle(); }}
-            className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
-              value === opt.value ? 'text-[#1967d2] font-medium bg-[#e8f0fe] dark:bg-blue-900/30 dark:text-blue-400' : 'text-gray-700 dark:text-gray-200'
-            }`}
-          >
-            {opt.label}
-          </button>
-        ))}
-      </div>
-    )}
-  </div>
-);
+const FilterDropdown = ({ id, label, options, value, onChange, isOpen, onToggle }) => {
+  const currentOption = options.find(o => o.value === value);
+  const isFiltered = value !== options[0].value;
+
+  return (
+    <div className="relative">
+      <button
+        onClick={onToggle}
+        className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all duration-200 border ${
+          isFiltered
+            ? 'bg-sky-500/10 border-sky-500/40 text-sky-600 dark:text-sky-400 shadow-sm'
+            : 'bg-white/70 dark:bg-white/[0.04] border-slate-200/80 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:bg-slate-100/80 dark:hover:bg-white/[0.08]'
+        }`}
+      >
+        <span>{currentOption?.label || label}</span>
+        <ChevronDown size={13} className={`text-slate-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+
+      {isOpen && (
+        <div className="absolute top-10 left-0 bg-white/95 dark:bg-[#161b22]/95 backdrop-blur-xl border border-slate-200 dark:border-white/10 rounded-2xl shadow-xl shadow-black/15 py-1.5 z-50 min-w-[160px] animate-in fade-in zoom-in-95 duration-150">
+          {options.map(opt => (
+            <button
+              key={opt.value}
+              onClick={() => { onChange(opt.value); onToggle(); }}
+              className={`w-full text-left px-3.5 py-2 text-xs font-medium transition-colors flex items-center justify-between ${
+                value === opt.value 
+                  ? 'text-sky-600 dark:text-sky-400 bg-sky-500/10 font-semibold' 
+                  : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5'
+              }`}
+            >
+              <span>{opt.label}</span>
+              {value === opt.value && <span className="w-1.5 h-1.5 rounded-full bg-sky-500"></span>}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const Home = () => {
-  const { files, folders, currentFolderId, folderPath, currentView, loading, fetchContent, uploadFile, toggleStar, deleteFile, navigateToFolder, navigateBack } = useFiles();
+  const { 
+    files, 
+    folders, 
+    currentFolderId, 
+    folderPath, 
+    currentView, 
+    loading, 
+    fetchContent, 
+    uploadFile, 
+    toggleStar, 
+    deleteFile, 
+    navigateToFolder, 
+    navigateBack 
+  } = useFiles();
+
   const [selectedItem, setSelectedItem] = useState(null);
   const [previewFile, setPreviewFile] = useState(null);
-  const [typeFilter, setTypeFilter] = useState('all');      // all | document | image | video | audio | archive
-  const [sortBy, setSortBy] = useState('date');             // date | size | name
-  const [sortOrder, setSortOrder] = useState('desc');       // asc | desc
-  const [openDropdown, setOpenDropdown] = useState(null);   // 'type' | 'sort' | 'order' | null
-  const [viewLayout, setViewLayout] = useState('list');     // 'grid' | 'list'
+  const [typeFilter, setTypeFilter] = useState('all');      
+  const [sortBy, setSortBy] = useState('date');             
+  const [sortOrder, setSortOrder] = useState('desc');       
+  const [openDropdown, setOpenDropdown] = useState(null);   
+  const [viewLayout, setViewLayout] = useState('grid');     
 
   useEffect(() => {
     fetchContent(currentFolderId, '', currentView);
   }, [currentFolderId, currentView, fetchContent]);
 
   const onDrop = useCallback(acceptedFiles => {
-    if (currentView !== 'drive' && currentView !== 'home') return; // Maybe restrict drops to drive/home
+    if (currentView !== 'drive' && currentView !== 'home') return;
     acceptedFiles.forEach(file => {
       uploadFile(file, currentView === 'drive' ? currentFolderId : null);
     });
@@ -93,18 +135,19 @@ const Home = () => {
     alert(`Move ${file.name}`);
   };
 
-  // Close dropdown when clicking outside
   const filterRef = useRef(null);
   useEffect(() => {
-    const handler = (e) => { if (filterRef.current && !filterRef.current.contains(e.target)) setOpenDropdown(null); };
+    const handler = (e) => { 
+      if (filterRef.current && !filterRef.current.contains(e.target)) {
+        setOpenDropdown(null); 
+      }
+    };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  // Apply type filter and sorting to the files list
   const processedFiles = React.useMemo(() => {
     let result = [...files];
-    // Type filter
     if (typeFilter !== 'all') {
       const extMap = {
         document: ['pdf','doc','docx','txt','ppt','pptx','xls','xlsx','csv'],
@@ -120,7 +163,7 @@ const Home = () => {
         return exts.includes(ext);
       });
     }
-    // Sort
+
     result.sort((a, b) => {
       let cmp = 0;
       if (sortBy === 'date')  cmp = new Date(a.createdAt) - new Date(b.createdAt);
@@ -139,39 +182,60 @@ const Home = () => {
     { value: 'audio',    label: '🎵 Audio' },
     { value: 'archive',  label: '📦 Archives' },
   ];
+
   const SORT_OPTIONS = [
     { value: 'date', label: 'Date' },
     { value: 'size', label: 'Size' },
     { value: 'name', label: 'Name' },
   ];
 
-
   if (currentView === 'settings') {
     return <Settings />;
   }
 
   return (
-    <div {...getRootProps()} className="min-h-full flex relative outline-none w-full bg-white dark:bg-gray-900 rounded-tl-3xl rounded-bl-3xl border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm transition-colors">
+    <div {...getRootProps()} className="w-full h-full flex relative outline-none bg-transparent">
       <input {...getInputProps()} />
       
       {/* Main Content Area */}
-      <div className={`flex-1 flex flex-col min-w-0 transition-all ${selectedItem ? 'mr-80' : ''}`}>
+      <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${selectedItem ? 'lg:mr-84' : ''}`}>
+        
+        {/* Full-screen Drag Overlay */}
         {isDragActive && (
-          <div className="absolute inset-0 bg-[#1967d2]/5 border-2 border-dashed border-[#1967d2] z-40 rounded-3xl flex items-center justify-center backdrop-blur-[2px] transition-all">
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl flex flex-col items-center shadow-xl border border-gray-200 dark:border-gray-700">
-              <UploadCloud size={48} className="text-[#1967d2] mb-4 animate-bounce" />
-              <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">Drop files to upload</h2>
-              <p className="text-gray-500 dark:text-gray-400 mt-2">Files will be securely saved to Telegram</p>
+          <div className="absolute inset-0 bg-sky-950/40 border-2 border-dashed border-sky-400 z-50 backdrop-blur-md flex items-center justify-center animate-in fade-in duration-200">
+            <div className="bg-white/95 dark:bg-[#161b22]/95 backdrop-blur-xl p-8 rounded-3xl flex flex-col items-center shadow-2xl border border-sky-500/30 max-w-sm text-center">
+              <div className="w-16 h-16 rounded-2xl bg-sky-500/10 text-sky-500 flex items-center justify-center mb-4 animate-bounce">
+                <UploadCloud size={36} />
+              </div>
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white">Drop to Upload</h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5">
+                Files will be securely stored to your Telegram Cloud Channel
+              </p>
             </div>
           </div>
         )}
 
-        <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center space-x-2 text-gray-800 dark:text-gray-100">
-          <h1 className="text-2xl font-normal">{getViewTitle()}</h1>
-          {currentView === 'drive' && <ChevronDown size={20} className="text-gray-500 dark:text-gray-400 mt-1 cursor-pointer" />}
+        {/* View Header & Breadcrumb */}
+        <div className="px-6 py-4 flex items-center justify-between border-b border-slate-200/60 dark:border-white/5 bg-white/40 dark:bg-slate-900/20 backdrop-blur-sm">
+          <div className="flex items-center space-x-2.5">
+            <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
+              {getViewTitle()}
+            </h1>
+            {currentView === 'drive' && (
+              <span className="text-xs px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-600 dark:text-sky-400 font-semibold border border-sky-500/20">
+                Root
+              </span>
+            )}
+          </div>
+
+          <div className="text-xs text-slate-400 dark:text-slate-500 font-medium">
+            {processedFiles.length} {processedFiles.length === 1 ? 'file' : 'files'}
+            {folders.length > 0 && ` • ${folders.length} ${folders.length === 1 ? 'folder' : 'folders'}`}
+          </div>
         </div>
 
-        <div ref={filterRef} className="px-6 py-3 flex items-center gap-2 flex-wrap">
+        {/* Filter Toolbar */}
+        <div ref={filterRef} className="px-6 py-3 flex items-center gap-2.5 flex-wrap border-b border-slate-200/40 dark:border-white/5 bg-white/20 dark:bg-white/[0.01]">
           <FilterDropdown
             id="type"
             label="Type"
@@ -190,78 +254,84 @@ const Home = () => {
             isOpen={openDropdown === 'sort'}
             onToggle={() => setOpenDropdown(openDropdown === 'sort' ? null : 'sort')}
           />
+
           {/* Asc / Desc toggle */}
           <button
             onClick={() => setSortOrder(o => o === 'asc' ? 'desc' : 'asc')}
-            className="border border-gray-300 dark:border-gray-600 rounded-full px-4 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-1.5 transition-colors"
+            className="px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all duration-200 border bg-white/70 dark:bg-white/[0.04] border-slate-200/80 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:bg-slate-100/80 dark:hover:bg-white/[0.08]"
             title={sortOrder === 'asc' ? 'Ascending' : 'Descending'}
           >
-            {sortOrder === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />}
-            <span>{sortOrder === 'asc' ? 'Ascending' : 'Descending'}</span>
+            {sortOrder === 'asc' ? <ArrowUp size={13} className="text-sky-500" /> : <ArrowDown size={13} className="text-sky-500" />}
+            <span>{sortOrder === 'asc' ? 'Asc' : 'Desc'}</span>
           </button>
-          {/* Active filter chips */}
+
+          {/* Active filter reset chip */}
           {(typeFilter !== 'all' || sortBy !== 'date' || sortOrder !== 'desc') && (
             <button
               onClick={() => { setTypeFilter('all'); setSortBy('date'); setSortOrder('desc'); }}
-              className="text-xs text-gray-400 hover:text-red-500 underline ml-1 transition-colors"
+              className="px-2.5 py-1 rounded-xl text-xs font-medium text-rose-500 hover:bg-rose-500/10 flex items-center gap-1 transition-colors"
             >
-              Reset
+              <RotateCcw size={12} />
+              <span>Reset</span>
             </button>
           )}
 
           <div className="flex-1"></div>
           
-          {/* View Toggle */}
-          <div className="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5 border border-gray-200 dark:border-gray-700">
-            <button
-              onClick={() => setViewLayout('list')}
-              className={`p-1.5 rounded-md transition-colors ${viewLayout === 'list' ? 'bg-white dark:bg-gray-700 shadow-sm text-gray-800 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
-              title="List View"
-            >
-              <List size={18} />
-            </button>
+          {/* View Toggle (Grid / List) */}
+          <div className="flex items-center p-0.5 rounded-xl bg-slate-200/70 dark:bg-white/[0.06] border border-slate-300/60 dark:border-white/5">
             <button
               onClick={() => setViewLayout('grid')}
-              className={`p-1.5 rounded-md transition-colors ${viewLayout === 'grid' ? 'bg-white dark:bg-gray-700 shadow-sm text-gray-800 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
+              className={`p-1.5 rounded-lg transition-all ${
+                viewLayout === 'grid' 
+                  ? 'bg-white dark:bg-[#161b22] shadow-sm text-sky-500 dark:text-sky-400 font-semibold' 
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+              }`}
               title="Grid View"
             >
-              <LayoutGrid size={18} />
+              <LayoutGrid size={15} />
+            </button>
+            <button
+              onClick={() => setViewLayout('list')}
+              className={`p-1.5 rounded-lg transition-all ${
+                viewLayout === 'list' 
+                  ? 'bg-white dark:bg-[#161b22] shadow-sm text-sky-500 dark:text-sky-400 font-semibold' 
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+              }`}
+              title="List View"
+            >
+              <List size={15} />
             </button>
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto pb-6">
+        {/* Scrollable Content */}
+        <div className="flex-1 overflow-y-auto px-6 py-5 custom-scrollbar">
           {loading ? (
-            <div className="flex-1 flex items-center justify-center py-20">
-              <div className="w-8 h-8 border-4 border-[#1967d2] border-t-transparent rounded-full animate-spin"></div>
+            <div className="flex-1 flex flex-col items-center justify-center py-24">
+              <div className="w-10 h-10 border-3 border-sky-500 border-t-transparent rounded-full animate-spin"></div>
+              <p className="text-xs text-slate-400 mt-3 font-medium">Syncing files from Telegram...</p>
             </div>
           ) : (
             <>
-              {currentView === 'home' && (
-                <div className="px-6 mb-6">
-                  <h2 className="text-[#1967d2] font-medium mb-4">Suggested</h2>
-                  {/* Dashboard like summary could go here */}
-                </div>
-              )}
-
-              {/* Breadcrumb — only show when inside a sub-folder in drive view */}
+              {/* Breadcrumbs for nested folders */}
               {currentView === 'drive' && folderPath.length > 0 && (
-                <div className="px-6 mb-4 flex items-center gap-1.5 text-sm flex-wrap">
+                <div className="mb-5 flex items-center gap-2 text-xs font-medium flex-wrap bg-white/50 dark:bg-white/[0.02] p-2.5 rounded-xl border border-slate-200/60 dark:border-white/5">
                   <button
                     onClick={() => navigateBack(-1)}
-                    className="text-[#1967d2] hover:underline font-medium"
+                    className="text-sky-600 dark:text-sky-400 hover:underline font-semibold"
                   >
                     My Drive
                   </button>
                   {folderPath.map((crumb, idx) => (
-                    <span key={crumb._id} className="flex items-center gap-1.5">
-                      <span className="text-gray-400 dark:text-gray-600">/</span>
+                    <span key={crumb._id} className="flex items-center gap-2">
+                      <ChevronRight size={13} className="text-slate-400" />
                       {idx === folderPath.length - 1 ? (
-                        <span className="text-gray-700 dark:text-gray-300 font-medium">{crumb.name}</span>
+                        <span className="text-slate-800 dark:text-slate-200 font-bold">{crumb.name}</span>
                       ) : (
                         <button
                           onClick={() => navigateBack(idx)}
-                          className="text-[#1967d2] hover:underline"
+                          className="text-sky-600 dark:text-sky-400 hover:underline"
                         >
                           {crumb.name}
                         </button>
@@ -273,8 +343,8 @@ const Home = () => {
 
               {files.length === 0 && folders.length === 0 ? (
                 <EmptyState 
-                  message={`No items in ${getViewTitle()}`} 
-                  subMessage={currentView === 'drive' ? "Drag and drop files here to upload" : ""}
+                  message={`No files in ${getViewTitle()}`} 
+                  subMessage={currentView === 'drive' ? "Drag and drop files here or click New Upload to start" : ""}
                 />
               ) : (
                 <FileGrid
@@ -298,65 +368,88 @@ const Home = () => {
         </div>
       </div>
 
-      {/* Right Sidebar Details Pane */}
+      {/* Right Slide-over Details Pane */}
       {selectedItem && (
-        <div className="absolute right-0 top-0 bottom-0 w-80 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 flex flex-col shadow-[-4px_0_15px_rgba(0,0,0,0.05)] z-20 transition-colors">
-          <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
-            <div className="flex items-center space-x-3 text-gray-800 dark:text-gray-100">
-              {selectedItem.type === 'folder' ? (
-                <FolderIcon fill="#1967d2" color="#1967d2" size={24} />
-              ) : (
-                <FileIcon className="text-blue-500" size={24} />
-              )}
-              <h3 className="font-medium truncate w-48" title={selectedItem.name}>{selectedItem.name}</h3>
+        <aside className="fixed lg:absolute right-0 top-0 bottom-0 w-80 
+          bg-white/95 dark:bg-[#0c1017]/95 backdrop-blur-2xl 
+          border-l border-slate-200/80 dark:border-white/10 
+          flex flex-col z-40 shadow-2xl transition-all duration-300 animate-in slide-in-from-right"
+        >
+          <div className="p-4 border-b border-slate-100 dark:border-white/5 flex items-center justify-between">
+            <div className="flex items-center space-x-2.5 min-w-0">
+              <div className="p-2 rounded-xl bg-sky-500/10 text-sky-500">
+                {selectedItem.type === 'folder' ? <FolderIcon size={18} /> : <FileIcon size={18} />}
+              </div>
+              <h3 className="font-semibold text-sm text-slate-900 dark:text-white truncate" title={selectedItem.name}>
+                {selectedItem.name}
+              </h3>
             </div>
-            <button onClick={() => setSelectedItem(null)} className="text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 p-1 rounded-full">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"></path></svg>
+            <button 
+              onClick={() => setSelectedItem(null)} 
+              className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
+            >
+              <X size={16} />
             </button>
           </div>
-          
-          <div className="flex border-b border-gray-200 dark:border-gray-700">
-            <button className="flex-1 py-3 text-sm font-medium text-[#1967d2] border-b-2 border-[#1967d2]">Details</button>
-            <button className="flex-1 py-3 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50">Activity</button>
+
+          <div className="flex border-b border-slate-100 dark:border-white/5 px-4 text-xs font-semibold">
+            <button className="py-2.5 text-sky-500 border-b-2 border-sky-500 mr-4">
+              Properties
+            </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4">
-            <div className="mb-6 pb-6 border-b border-gray-100 dark:border-gray-700">
-              <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">{selectedItem.type === 'folder' ? 'Folder Properties' : 'File Properties'}</h4>
-              <div className="space-y-4">
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 text-xs custom-scrollbar">
+            <div className="space-y-3">
+              <div>
+                <span className="text-slate-400 block mb-0.5">Type</span>
+                <span className="font-medium text-slate-800 dark:text-slate-200 capitalize">
+                  {selectedItem.type === 'folder' ? 'Directory Folder' : (selectedItem.category || 'File')}
+                </span>
+              </div>
+
+              {selectedItem.type === 'file' && (
                 <div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Type</p>
-                  <p className="text-sm text-gray-800 dark:text-gray-200">{selectedItem.type === 'folder' ? 'Folder' : 'File'}</p>
+                  <span className="text-slate-400 block mb-0.5">File Size</span>
+                  <span className="font-medium text-slate-800 dark:text-slate-200">
+                    {formatBytes(selectedItem.size)}
+                  </span>
                 </div>
-                {selectedItem.type === 'file' && (
-                  <div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Size</p>
-                    <p className="text-sm text-gray-800 dark:text-gray-200">{formatBytes(selectedItem.size)}</p>
-                  </div>
-                )}
-                <div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Location</p>
-                  <p className="text-sm text-gray-800 dark:text-gray-200">{currentView}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Modified</p>
-                  <p className="text-sm text-gray-800 dark:text-gray-200">{selectedItem.updatedAt ? format(new Date(selectedItem.updatedAt), 'MMM d, yyyy') : 'Unknown'}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Created</p>
-                  <p className="text-sm text-gray-800 dark:text-gray-200">{selectedItem.createdAt ? format(new Date(selectedItem.createdAt), 'MMM d, yyyy') : 'Unknown'}</p>
-                </div>
+              )}
+
+              <div>
+                <span className="text-slate-400 block mb-0.5">Storage Backend</span>
+                <span className="font-medium text-sky-500">
+                  Telegram Cloud Bot API
+                </span>
+              </div>
+
+              <div>
+                <span className="text-slate-400 block mb-0.5">Modified</span>
+                <span className="font-medium text-slate-800 dark:text-slate-200">
+                  {selectedItem.updatedAt ? format(new Date(selectedItem.updatedAt), 'MMM d, yyyy • h:mm a') : 'Unknown'}
+                </span>
+              </div>
+
+              <div>
+                <span className="text-slate-400 block mb-0.5">Created</span>
+                <span className="font-medium text-slate-800 dark:text-slate-200">
+                  {selectedItem.createdAt ? format(new Date(selectedItem.createdAt), 'MMM d, yyyy • h:mm a') : 'Unknown'}
+                </span>
               </div>
             </div>
 
-            <div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 font-medium mb-2">Description</p>
-              <div className="text-sm text-gray-400 dark:text-gray-500 italic bg-gray-50 dark:bg-gray-800/50 p-3 rounded-lg border border-gray-100 dark:border-gray-700">
-                Add a description
+            {selectedItem.type === 'file' && (
+              <div className="pt-3 border-t border-slate-100 dark:border-white/5">
+                <button
+                  onClick={() => handleDownload(selectedItem)}
+                  className="w-full py-2.5 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-semibold text-xs shadow-md shadow-sky-500/20 transition-all"
+                >
+                  Download File
+                </button>
               </div>
-            </div>
+            )}
           </div>
-        </div>
+        </aside>
       )}
 
       {/* Preview Modal */}
