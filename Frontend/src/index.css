@@ -12,7 +12,14 @@
 }
 
 @layer base {
-  body {
+  html, body, #root {
     font-family: 'Inter', system-ui, sans-serif;
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+    background-color: #f8f9fa;
+  }
+  .dark html, .dark body, .dark #root {
+    background-color: #111827;
   }
 }
