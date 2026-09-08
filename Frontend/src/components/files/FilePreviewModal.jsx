@@ -1,11 +1,12 @@
 import React from 'react';
 import { X, Download, FileText, Archive, File as FileIcon } from 'lucide-react';
+import { API_BASE_URL } from '../../services/axiosInstance';
 
 const FilePreviewModal = ({ file, onClose, onDownload }) => {
   if (!file) return null;
 
   const token = localStorage.getItem('token');
-  const fileUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/files/${file._id}/download?action=view&token=${token}`;
+  const fileUrl = `${API_BASE_URL}/files/${file._id}/download?action=view&token=${token}`;
 
   const renderContent = () => {
     if (file.category === 'image') {

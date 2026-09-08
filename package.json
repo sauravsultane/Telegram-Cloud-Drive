@@ -1,0 +1,10 @@
+{
+  "name": "telegram-cloud-drive",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "postinstall": "npm --prefix Backend install",
+    "build": "npm --prefix Backend install",
+    "start": "node Backend/server.js"
+  }
+}

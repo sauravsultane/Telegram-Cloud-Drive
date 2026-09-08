@@ -26,6 +26,7 @@ import FileGrid from '../components/files/FileGrid';
 import EmptyState from '../components/files/EmptyState';
 import FilePreviewModal from '../components/files/FilePreviewModal';
 import Settings from './Settings';
+import { API_BASE_URL } from '../services/axiosInstance';
 
 const FilterDropdown = ({ id, label, options, value, onChange, isOpen, onToggle }) => {
   const currentOption = options.find(o => o.value === value);
@@ -106,7 +107,7 @@ const Home = () => {
 
   const handleDownload = (file) => {
     const token = localStorage.getItem('token');
-    window.location.href = `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/files/${file._id}/download?token=${token}`;
+    window.location.href = `${API_BASE_URL}/files/${file._id}/download?token=${token}`;
   };
 
   const handlePreview = (file) => {

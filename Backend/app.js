@@ -1,8 +1,10 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 const dotenv = require('dotenv');
 const errorHandler = require('./src/middleware/errorHandler');
 
+dotenv.config({ path: path.resolve(__dirname, '.env') });
 dotenv.config();
 
 const app = express();
@@ -18,7 +20,11 @@ app.use('/api/files', require('./src/routes/file.routes'));
 app.use('/api/folders', require('./src/routes/folder.routes'));
 app.use('/api/share', require('./src/routes/share.routes'));
 
-// Basic health check route
+// Basic health check routes
+app.get('/', (req, res) => {
+  res.status(200).json({ status: 'ok', message: 'TeleDrive API is running' });
+});
+
 app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'ok', message: 'TeleDrive API is running' });
 });

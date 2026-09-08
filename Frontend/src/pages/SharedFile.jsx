@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import api from '../services/axiosInstance';
+import api, { API_BASE_URL } from '../services/axiosInstance';
 import { Cloud, Download, AlertTriangle } from 'lucide-react';
 import { formatBytes } from '../utils/formatBytes';
 
@@ -26,7 +26,7 @@ const SharedFile = () => {
 
   const handleDownload = () => {
     // Navigate to download stream directly (no auth needed)
-    window.location.href = `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/share/${token}/download`;
+    window.location.href = `${API_BASE_URL}/share/${token}/download`;
   };
 
   if (loading) {
